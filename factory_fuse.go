@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"gopkg.in/yaml.v3"
 )
 
 type ArcheId struct {
@@ -32,11 +33,27 @@ type User struct {
 }
 
 type DBCred struct {
-  User string
-  Pass string
-  Host string
-  Port string
-  DBName string
+  User string `yaml:"user"`
+  Pass string `yaml:"pass"`
+  Host string `yaml:"host"`
+  Port string `yaml:"port"`
+  DBName string `yaml:"dbname"`
+}
+
+func ReadConfig(yaml_f string) DBCred {
+  var cred DBCred
+
+  file_b, err := os.ReadFile(yaml_f)
+  if err != nil {
+    panic(err)
+  }
+
+  err = yaml.Unmarshal(file_b, &cred)
+  if err != nil {
+    panic(err)
+  }
+
+  return cred
 }
 
 func DBInit() (*sql.DB, error) {
@@ -48,13 +65,16 @@ func DBInit() (*sql.DB, error) {
     DBName: "mine",
   }*/
 
+  /*
   cred := DBCred {
     User: os.Getenv("FF_DBUSER"),
     Pass: os.Getenv("FF_DBPASS"),
     Host: os.Getenv("FF_DBHOST"),
     Port: "5432",
     DBName: "ff",
-  };
+  };*/
+
+  cred := ReadConfig("db_cred.yaml")
 
   connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cred.User, cred.Pass, cred.Host, cred.Port, cred.DBName);
 
