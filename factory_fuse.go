@@ -39,6 +39,141 @@ type DBCred struct {
   Port string `yaml:"port"`
   DBName string `yaml:"dbname"`
 }
+type Machine struct {
+    ID           int
+    Name         string
+    Status       string
+    Capacity     int
+}
+
+type Job struct {
+    ID           int
+    Name         string
+    Description  string
+    OrderID      int
+}
+
+type Task struct {
+    ID           int
+    JobID        int
+    Sequence     int
+}
+
+type Alternative struct {
+    ID           int
+    TaskID       int
+    MachineID    int
+    ProcessingTime int
+}
+
+type Operation struct {
+    ID           int
+    JobID        int
+    TaskID       int
+    AltID        int
+    Sequence     int
+}
+
+type Order struct {
+    ID           int
+    CustomerName string
+    OrderDate    string
+    OrderStatus  string
+}
+
+type Interval struct {
+    ID           int
+    JobID        int
+    TaskID       int
+    AltID        int
+    MachineID    int
+    StartTime    string
+    EndTime      string
+}
+
+type Presence struct {
+    ID           int
+    JobID        int
+    TaskID       int
+    AltID        int
+    MachineID    int
+}
+
+type Production struct {
+    ID           int
+    OperationID  int
+    Start        string
+    End          string
+    Quantity     int
+}
+_, err = db.Exec("
+        CREATE TABLE Machines (
+            machine_id SERIAL PRIMARY KEY,
+            machine_name VARCHAR(50) NOT NULL,
+            machine_status VARCHAR(50) NOT NULL,
+            capacity INT NOT NULL
+        );
+
+        CREATE TABLE Jobs (
+            job_id SERIAL PRIMARY KEY,
+            job_name VARCHAR(50) NOT NULL,
+            job_description VARCHAR(255),
+            order_id INT NOT NULL REFERENCES Orders(order_id)
+        );
+
+        CREATE TABLE Tasks (
+            task_id SERIAL PRIMARY KEY,
+            job_id INT NOT NULL REFERENCES Jobs(job_id),
+            task_sequence INT NOT NULL
+        );
+
+        CREATE TABLE Alternatives (
+            alt_id SERIAL PRIMARY KEY,
+            task_id INT NOT NULL REFERENCES Tasks(task_id),
+            machine_id INT NOT NULL REFERENCES Machines(machine_id),
+            processing_time INT NOT NULL
+        );
+
+        CREATE TABLE Operations (
+            operation_id SERIAL PRIMARY KEY,
+            job_id INT NOT NULL REFERENCES Jobs(job_id),
+            task_id INT NOT NULL REFERENCES Tasks(task_id),
+            alt_id INT NOT NULL REFERENCES Alternatives(alt_id),
+            operation_sequence INT NOT NULL
+        );
+
+        CREATE TABLE Orders (
+            order_id SERIAL PRIMARY KEY,
+            customer_name VARCHAR(255) NOT NULL,
+            order_date DATE NOT NULL,
+            order_status VARCHAR(50) NOT NULL
+        );
+
+        CREATE TABLE Intervals (
+            interval_id SERIAL PRIMARY KEY,
+            job_id INT NOT NULL REFERENCES Jobs(job_id),
+            task_id INT NOT NULL REFERENCES Tasks(task_id),
+            alt_id INT NOT NULL REFERENCES Alternatives(alt_id),
+            machine_id INT NOT NULL REFERENCES Machines(machine_id),
+            start_time TIME NOT NULL,
+            end_time TIME NOT NULL
+        );
+
+        CREATE TABLE Presences (
+            presence_id SERIAL PRIMARY KEY,
+            job_id INT NOT NULL REFERENCES Jobs(job_id),
+            task_id INT NOT NULL REFERENCES Tasks(task_id),
+            alt_id INT NOT NULL REFERENCES Alternatives(alt_id),
+            machine_id INT NOT NULL REFERENCES Machines(machine_id)
+        );
+CREATE TABLE Productions (
+  production_id SERIAL PRIMARY KEY,
+  operation_id INT NOT NULL REFERENCES Operations(operation_id),
+  production_start_time TIME NOT NULL,
+  production_end_time TIME NOT NULL,
+  production_quantity INT NOT NULL
+);")
+
 
 func ReadConfig(yaml_f string) DBCred {
   var cred DBCred
@@ -97,6 +232,7 @@ func MainHandler(c *gin.Context) {
   c.JSON(http.StatusOK, gin.H{
     "message": "success",
   })
+	
 }
 
 func OkHandler(c *gin.Context) {
